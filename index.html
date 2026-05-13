@@ -44,20 +44,82 @@
 </head>
 <body class="text-slate-800 h-screen flex flex-col">
 
+    <!-- AUTH VIEW (Login/Register Barrier) -->
+    <div id="view-auth" class="fixed inset-0 z-50 bg-slate-100 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-8 w-full max-w-md fade-in">
+            <div class="text-center mb-6">
+                <!-- Replace the src link below with your actual customizable PNG file link -->
+                <img src="https://placehold.co/150x150/2563eb/ffffff?text=LOGO" alt="elev8group.png" class="h-16 w-auto mx-auto mb-3 object-contain">
+                <h2 class="text-2xl font-bold text-slate-900" id="auth-title">Sign In</h2>
+                <p class="text-sm text-slate-500 mt-1">EHI Item Receiving System</p>
+            </div>
+            <form id="auth-form" onsubmit="handleAuth(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                        <input type="email" id="auth-email" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                        <input type="password" id="auth-password" required minlength="6" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div id="role-selection-container" class="hidden">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Select Department</label>
+                        <select id="auth-role" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white">
+                            <option value="purchasing">Purchasing (Create/Delete Requests)</option>
+                            <option value="receiving">Warehouse/Receiving (Process Items)</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="auth-submit-btn" class="w-full py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors shadow-sm mt-4">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Login
+                    </button>
+                </div>
+            </form>
+            <div class="mt-6 text-center text-sm text-slate-600" id="auth-toggle-text">
+                Don't have an account? <a href="#" onclick="toggleAuthMode()" class="text-primary hover:underline font-medium">Register here</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROLE SETUP VIEW (Fallback if missing role) -->
+    <div id="view-role-select" class="fixed inset-0 z-50 bg-slate-100 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-8 w-full max-w-md fade-in text-center">
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">Welcome!</h2>
+            <p class="text-slate-600 mb-6">Please select your department to continue.</p>
+            <div class="space-y-4">
+                <button onclick="setInitialRole('purchasing')" class="w-full py-3 px-4 border border-slate-200 rounded-xl hover:border-primary hover:bg-blue-50 transition-colors flex items-center justify-center gap-3 group">
+                    <i class="fas fa-cart-shopping text-xl text-slate-400 group-hover:text-primary"></i>
+                    <span class="font-medium text-slate-700 group-hover:text-primary">Purchasing Department</span>
+                </button>
+                <button onclick="setInitialRole('receiving')" class="w-full py-3 px-4 border border-slate-200 rounded-xl hover:border-primary hover:bg-blue-50 transition-colors flex items-center justify-center gap-3 group">
+                    <i class="fas fa-clipboard-check text-xl text-slate-400 group-hover:text-primary"></i>
+                    <span class="font-medium text-slate-700 group-hover:text-primary">Receiving Department</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER (Hidden until logged in) -->
+    <div id="app-container" class="hidden flex-col h-full w-full">
+
     <nav class="bg-white shadow-sm border-b border-slate-200 z-10 relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <i class="fas fa-boxes-stacked text-primary text-2xl mr-3"></i>
+                    <!-- Replace the src link below with your actual customizable PNG file link -->
+                    <img src="https://placehold.co/100x100/2563eb/ffffff?text=LOGO" alt="Company Logo" class="h-8 w-auto mr-3 object-contain">
                     <span class="font-bold text-xl tracking-tight hidden sm:block">EHI RECEIVING FORM</span>
                     <span class="font-bold text-xl tracking-tight sm:hidden">EHI RCV</span>
                 </div>
                 <div class="flex items-center space-x-4 sm:space-x-8 overflow-x-auto">
-                    <button onclick="switchRole('purchasing')" id="tab-purchasing" class="h-full px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 focus:outline-none transition-colors tab-active whitespace-nowrap">
+                    <button onclick="switchRole('purchasing')" id="tab-purchasing" class="h-full px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 focus:outline-none transition-colors tab-active whitespace-nowrap hidden">
                         <i class="fas fa-cart-shopping mr-2"></i><span class="hidden sm:inline">Purchasing</span>
                     </button>
-                    <button onclick="switchRole('receiving')" id="tab-receiving" class="h-full px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 focus:outline-none transition-colors whitespace-nowrap">
+                    <button onclick="switchRole('receiving')" id="tab-receiving" class="h-full px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 focus:outline-none transition-colors whitespace-nowrap hidden">
                         <i class="fas fa-clipboard-check mr-2"></i><span class="hidden sm:inline">Receiving</span>
+                    </button>
+                    <button onclick="logoutUser()" class="h-full px-2 text-sm font-medium text-danger hover:text-red-800 focus:outline-none transition-colors whitespace-nowrap ml-2 border-l border-slate-200 pl-4">
+                        <i class="fas fa-sign-out-alt mr-1"></i> <span class="hidden sm:inline">Logout</span>
                     </button>
                 </div>
             </div>
@@ -303,6 +365,8 @@
             </div>
         </div>
     </main>
+    
+    </div> <!-- END APP CONTAINER -->
 
     <!-- VIEW REQUEST DETAILS MODAL -->
     <div id="view-modal" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 transition-opacity">
@@ -397,8 +461,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -421,6 +485,8 @@
         let requests = [];
         let currentProcessingId = null;
         let uploadedImages = { dr: null, si: null };
+        let currentUserRole = null;
+        let isLoginMode = true;
 
         // --- Image Compression Helper ---
         function compressImage(file, callback) {
@@ -461,33 +527,144 @@
 
         // Initialize Data
         async function initData() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                const user = auth.currentUser;
-                if (!user) return;
+            // Attempt auto-login if token is available in preview environments
+            if (typeof __initial_auth_token !== 'undefined') {
+                try { await signInWithCustomToken(auth, __initial_auth_token); } catch(err) { console.error(err); }
+            }
 
-                // Syncing with public collection for shared access across departments
+            onAuthStateChanged(auth, async (user) => {
+                if (user && !user.isAnonymous) {
+                    // Hide auth overlay
+                    document.getElementById('view-auth').classList.add('hidden');
+                    
+                    try {
+                        const roleDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile');
+                        const roleDoc = await getDoc(roleDocRef);
+                        
+                        if (roleDoc.exists()) {
+                            currentUserRole = roleDoc.data().role;
+                            launchApp();
+                        } else {
+                            // Account exists but role wasn't chosen
+                            document.getElementById('view-role-select').classList.remove('hidden');
+                        }
+                    } catch (err) {
+                        console.error("Error fetching user profile:", err);
+                        showNotification("Failed to load user permissions.", "error");
+                    }
+                } else {
+                    // Logged out
+                    document.getElementById('view-auth').classList.remove('hidden');
+                    document.getElementById('view-role-select').classList.add('hidden');
+                    document.getElementById('app-container').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('flex');
+                }
+            });
+        }
+
+        // --- Authentication & Role Setup ---
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('auth-title').textContent = isLoginMode ? 'Sign In' : 'Create Account';
+            document.getElementById('auth-submit-btn').innerHTML = isLoginMode ? '<i class="fas fa-sign-in-alt mr-2"></i> Login' : '<i class="fas fa-user-plus mr-2"></i> Register';
+            document.getElementById('auth-toggle-text').innerHTML = isLoginMode 
+                ? "Don't have an account? <a href='#' onclick='toggleAuthMode()' class='text-primary hover:underline font-medium'>Register here</a>" 
+                : "Already have an account? <a href='#' onclick='toggleAuthMode()' class='text-primary hover:underline font-medium'>Login here</a>";
+            
+            const roleSelect = document.getElementById('role-selection-container');
+            if (isLoginMode) roleSelect.classList.add('hidden');
+            else roleSelect.classList.remove('hidden');
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showNotification('Logged in successfully!', 'success');
+                } else {
+                    const role = document.getElementById('auth-role').value;
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    
+                    // Save user role directly to private collection
+                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile'), {
+                        email: user.email,
+                        role: role
+                    });
+                    showNotification('Account created successfully!', 'success');
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function setInitialRole(role) {
+            const user = auth.currentUser;
+            if (!user) return;
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile'), {
+                    email: user.email || 'auto-provisioned',
+                    role: role
+                });
+                document.getElementById('view-role-select').classList.add('hidden');
+                currentUserRole = role;
+                launchApp();
+            } catch (e) {
+                console.error(e);
+                showNotification('Error setting account role.', 'error');
+            }
+        }
+
+        async function logoutUser() {
+            try {
+                await signOut(auth);
+                requests = []; // Clear local data barrier
+                document.getElementById('auth-email').value = '';
+                document.getElementById('auth-password').value = '';
+            } catch (error) {
+                showNotification('Failed to log out.', 'error');
+            }
+        }
+
+        function launchApp() {
+            document.getElementById('app-container').classList.remove('hidden');
+            document.getElementById('app-container').classList.add('flex');
+
+            const tabPurchasing = document.getElementById('tab-purchasing');
+            const tabReceiving = document.getElementById('tab-receiving');
+            
+            // Apply Strict Role Barrier
+            if (currentUserRole === 'purchasing') {
+                tabPurchasing.classList.remove('hidden');
+                tabReceiving.classList.add('hidden');
+                switchRole('purchasing');
+            } else if (currentUserRole === 'receiving') {
+                tabPurchasing.classList.add('hidden');
+                tabReceiving.classList.remove('hidden');
+                switchRole('receiving');
+            }
+
+            // Sync Data
+            if (!requestsRef) {
                 requestsRef = collection(db, 'artifacts', appId, 'public', 'data', 'requests');
-                
                 onSnapshot(requestsRef, (snapshot) => {
                     requests = snapshot.docs.map(doc => doc.data());
-                    // Sort descending by creation date directly in memory (avoids complex query indexing)
                     requests.sort((a, b) => new Date(b.dateCreated) - new Date(a.dateCreated));
                     
-                    renderPurchasingTables();
-                    renderPendingRequests();
+                    if (currentUserRole === 'purchasing') renderPurchasingTables();
+                    else renderPendingRequests();
                 }, (error) => {
                     console.error("Firestore error:", error);
                     showNotification("Data sync failed.", "error");
                 });
-
-            } catch(err) {
-                console.error("Auth error:", err);
-                showNotification("Database connection failed.", "error");
+            } else {
+                if (currentUserRole === 'purchasing') renderPurchasingTables();
+                else renderPendingRequests();
             }
         }
 
@@ -1093,11 +1270,14 @@
         window.handleImageUpload = handleImageUpload;
         window.submitReceipt = submitReceipt;
         window.exportDataToCSV = exportDataToCSV;
+        window.toggleAuthMode = toggleAuthMode;
+        window.handleAuth = handleAuth;
+        window.setInitialRole = setInitialRole;
+        window.logoutUser = logoutUser;
 
         window.onload = () => {
             clearPurchasingForm(); 
-            switchRole('purchasing');
-            initData(); // Initialize Firebase and sync data
+            initData(); // Initialize Firebase and Listen for Auth State
         };
 
     </script>
