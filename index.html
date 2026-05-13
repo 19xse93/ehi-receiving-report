@@ -40,7 +40,7 @@
             color: #112240; /* Updated to match new primary color */
             font-weight: 600;
         }
-    </style>
+    </style>Your role was loaded, but Firestore is blocking access to the Requests table. Please check your Database Rules
 </head>
 <body class="text-slate-800 h-screen flex flex-col">
 
@@ -753,7 +753,11 @@
                     document.getElementById('error-content').innerHTML = `
                         <i class="fas fa-lock text-danger text-5xl mb-4"></i>
                         <h2 class="text-xl font-bold text-slate-900 mb-2">Data Sync Blocked</h2>
-                        <p class="text-slate-600 text-sm mb-4">Your role was loaded, but Firestore is blocking access to the Requests table. Please check your Database Rules.</p>
+                        <p class="text-slate-600 text-sm mb-4">Your role was loaded, but Firestore is blocking access to the Requests table.</p>
+                        <div class="bg-red-50 text-red-800 p-3 rounded text-left text-xs font-mono mb-4 border border-red-200 overflow-x-auto">
+                            <strong>Error Code:</strong> ${error.code || 'N/A'}<br/>
+                            <strong>Message:</strong> ${error.message || error.toString()}
+                        </div>
                         <button onclick="window.location.reload()" class="w-full bg-primary text-white py-2.5 rounded-lg font-medium mb-3 hover:bg-blue-800 transition-colors">Refresh Page</button>
                         <button onclick="logoutUser(); window.location.reload();" class="w-full border border-slate-300 text-slate-600 py-2.5 rounded-lg font-medium hover:bg-slate-50 transition-colors">Sign Out</button>
                     `;
