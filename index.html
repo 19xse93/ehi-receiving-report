@@ -36,11 +36,11 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .tab-active {
-            border-bottom: 2px solid #112240; /* Updated to match new primary color */
-            color: #112240; /* Updated to match new primary color */
+            border-bottom: 2px solid #112240;
+            color: #112240;
             font-weight: 600;
         }
-    </style>Your role was loaded, but Firestore is blocking access to the Requests table. Please check your Database Rules
+    </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col">
 
@@ -56,7 +56,6 @@
     <div id="view-auth" class="fixed inset-0 z-50 bg-slate-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-8 w-full max-w-md fade-in">
             <div class="text-center mb-6">
-                <!-- Replace the src link below with your actual customizable PNG file link -->
                 <img src="image_56e5d5.png" alt="Elev8 Logo" class="h-20 w-auto mx-auto mb-3 object-contain">
                 <h2 class="text-2xl font-bold text-slate-900" id="auth-title">Sign In</h2>
                 <p class="text-sm text-slate-500 mt-1">Elev8 Item Receiving System</p>
@@ -121,7 +120,6 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <!-- Replace the src link below with your actual customizable PNG file link -->
                     <img src="image_56e5d5.png" alt="Elev8 Logo" class="h-8 w-auto mr-3 object-contain">
                     <span class="font-bold text-xl tracking-tight hidden sm:block">ELEV8 RECEIVING FORM</span>
                     <span class="font-bold text-xl tracking-tight sm:hidden">ELEV8 RCV</span>
@@ -495,7 +493,7 @@
         let currentUserRole = null;
         let isLoginMode = true;
 
-        // --- Global Error Handlers to prevent silent white screens ---
+        // --- Global Error Handlers ---
         window.addEventListener('error', (event) => {
             if (typeof showNotification === 'function') {
                 showNotification('System Error: ' + event.message, 'error');
@@ -546,7 +544,6 @@
 
         // Initialize Data
         async function initData() {
-            // Attempt auto-login if token is available in preview environments
             if (typeof __initial_auth_token !== 'undefined') {
                 try { await signInWithCustomToken(auth, __initial_auth_token); } catch(err) { console.error(err); }
             }
@@ -556,7 +553,6 @@
                 const authBtn = document.getElementById('auth-submit-btn');
 
                 if (user && !user.isAnonymous) {
-                    // Show loading state BEFORE hiding the login box
                     if (authBtn) {
                         authBtn.disabled = true;
                         authBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Loading profile...';
@@ -566,7 +562,6 @@
                         const roleDocRef = doc(db, 'artifacts', appId, 'users', user.uid);
                         const roleDoc = await getDoc(roleDocRef);
                         
-                        // NOW it is 100% safe to hide the login screen
                         authView.classList.add('hidden');
                         document.getElementById('view-error').classList.add('hidden');
                         
@@ -574,14 +569,11 @@
                             currentUserRole = roleDoc.data().role;
                             launchApp();
                         } else {
-                            // Account exists but role wasn't chosen/saved
                             document.getElementById('view-role-select').classList.remove('hidden');
                         }
                     } catch (err) {
                         console.error("Error fetching user profile:", err);
                         
-                        // If it fails here, it is almost ALWAYS a Firebase Security Rules issue.
-                        // Instead of a silent logout loop, we show a permanent error screen.
                         authView.classList.add('hidden');
                         document.getElementById('view-role-select').classList.add('hidden');
                         document.getElementById('app-container').classList.add('hidden');
@@ -591,7 +583,7 @@
                         document.getElementById('error-content').innerHTML = `
                             <i class="fas fa-database text-danger text-5xl mb-4"></i>
                             <h2 class="text-xl font-bold text-slate-900 mb-2">Database Access Blocked</h2>
-                            <p class="text-slate-600 text-sm mb-4">Login succeeded, but Firestore blocked data access. Here is the exact error from Firebase:</p>
+                            <p class="text-slate-600 text-sm mb-4">Login succeeded, but Firestore blocked data access. This happens if your Security Rules are missing or incorrect.</p>
                             <div class="bg-red-50 text-red-800 p-3 rounded text-left text-xs font-mono mb-4 border border-red-200 overflow-x-auto">
                                 <strong>Error Code:</strong> ${err.code || 'N/A'}<br/>
                                 <strong>Message:</strong> ${err.message || err.toString()}
@@ -601,7 +593,6 @@
                         `;
                     }
                 } else {
-                    // Logged out
                     authView.classList.remove('hidden');
                     document.getElementById('view-role-select').classList.add('hidden');
                     document.getElementById('view-error').classList.add('hidden');
@@ -643,7 +634,6 @@
                     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                     const user = userCredential.user;
                     
-                    // Save user role directly to private collection
                     try {
                         await setDoc(doc(db, 'artifacts', appId, 'users', user.uid), {
                             email: user.email,
@@ -652,7 +642,6 @@
                         showNotification('Account created successfully!', 'success');
                     } catch (dbError) {
                         console.error("DB Error on Registration", dbError);
-                        // If it fails to save the role, it will fall back to the view-role-select on load
                         showNotification('Registered, but failed to save role. Please check database rules.', 'warning');
                     }
                 }
@@ -661,11 +650,13 @@
                 
                 let errorMessage = error.message;
                 if (error.code === 'auth/invalid-credential') {
-                    errorMessage = "Invalid email or password. If you don't have an account, please Register first.";
+                    errorMessage = "We don't recognize this email and password combination. Please switch to 'Register' to create an account.";
                 } else if (error.code === 'auth/email-already-in-use') {
                     errorMessage = "This email is already registered. Please switch to Login.";
                 } else if (error.code === 'auth/weak-password') {
                     errorMessage = "Password should be at least 6 characters.";
+                } else if (error.code === 'auth/user-not-found') {
+                    errorMessage = "No account found with this email. Please switch to 'Register'.";
                 }
                 
                 showNotification(errorMessage, 'error');
@@ -701,7 +692,7 @@
         async function logoutUser() {
             try {
                 await signOut(auth);
-                requests = []; // Clear local data barrier
+                requests = []; 
                 document.getElementById('auth-email').value = '';
                 document.getElementById('auth-password').value = '';
             } catch (error) {
@@ -716,7 +707,6 @@
             const tabPurchasing = document.getElementById('tab-purchasing');
             const tabReceiving = document.getElementById('tab-receiving');
             
-            // Apply Strict Role Barrier with Safety Fallback
             if (currentUserRole === 'purchasing') {
                 tabPurchasing.classList.remove('hidden');
                 tabReceiving.classList.add('hidden');
@@ -726,14 +716,12 @@
                 tabReceiving.classList.remove('hidden');
                 switchRole('receiving');
             } else {
-                // Safety fallback if role data is corrupted
                 document.getElementById('app-container').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('flex');
                 document.getElementById('view-role-select').classList.remove('hidden');
-                return; // Stop execution
+                return;
             }
 
-            // Sync Data
             if (!requestsRef) {
                 requestsRef = collection(db, 'artifacts', appId, 'public', 'data', 'requests');
                 onSnapshot(requestsRef, (snapshot) => {
@@ -745,7 +733,6 @@
                 }, (error) => {
                     console.error("Firestore error:", error);
                     
-                    // Show giant error screen if syncing data fails
                     document.getElementById('app-container').classList.add('hidden');
                     document.getElementById('app-container').classList.remove('flex');
                     document.getElementById('view-error').classList.remove('hidden');
@@ -753,7 +740,7 @@
                     document.getElementById('error-content').innerHTML = `
                         <i class="fas fa-lock text-danger text-5xl mb-4"></i>
                         <h2 class="text-xl font-bold text-slate-900 mb-2">Data Sync Blocked</h2>
-                        <p class="text-slate-600 text-sm mb-4">Your role was loaded, but Firestore is blocking access to the Requests table.</p>
+                        <p class="text-slate-600 text-sm mb-4">Your role was loaded, but Firestore is blocking access to the Requests table. Please check your Database Rules</p>
                         <div class="bg-red-50 text-red-800 p-3 rounded text-left text-xs font-mono mb-4 border border-red-200 overflow-x-auto">
                             <strong>Error Code:</strong> ${error.code || 'N/A'}<br/>
                             <strong>Message:</strong> ${error.message || error.toString()}
@@ -864,9 +851,8 @@
             document.getElementById('create-request-form').reset();
             document.getElementById('purchasing-items-container').innerHTML = '';
             purchasingItemsCounter = 0;
-            addPurchasingItemRow(); // start with one empty row
+            addPurchasingItemRow(); 
             
-            // Default dates
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('expectedDate').value = today;
         }
