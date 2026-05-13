@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Item Receiving System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#475569',
+                        success: '#16a34a',
+                        danger: '#dc2626',
+                        warning: '#ca8a04',
+                        background: '#f8fafc',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tab-active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex flex-col">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 z-10 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-boxes-stacked text-primary text-2xl mr-3"></i>
+                    <span class="font-bold text-xl tracking-tight hidden sm:block">EHI RECEIVING FORM</span>
+                    <span class="font-bold text-xl tracking-tight sm:hidden">EHI RCV</span>
+                </div>
+                <div class="flex items-center space-x-4 sm:space-x-8 overflow-x-auto">
+                    <button onclick="switchRole('purchasing')" id="tab-purchasing" class="h-full px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 focus:outline-none transition-colors tab-active whitespace-nowrap">
+                        <i class="fas fa-cart-shopping mr-2"></i><span class="hidden sm:inline">Purchasing</span>
+                    </button>
+                    <button onclick="switchRole('receiving')" id="tab-receiving" class="h-full px-1 border-b-2 border-transparent text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 focus:outline-none transition-colors whitespace-nowrap">
+                        <i class="fas fa-clipboard-check mr-2"></i><span class="hidden sm:inline">Receiving</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto w-full">
+            
+            <!-- ALERT NOTIFICATION CONTAINER -->
+            <div id="notification-area" class="mb-4 hidden">
+                <div id="notification-content" class="p-4 rounded-md shadow-sm flex items-center justify-between text-sm font-medium">
+                    <span id="notification-message"></span>
+                    <button onclick="hideNotification()" class="text-current opacity-70 hover:opacity-100"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- PURCHASING VIEW: Create Receiving Request  -->
+            <!-- ========================================== -->
+            <div id="view-purchasing" class="fade-in space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-4 gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">Create Receiving Request</h1>
+                        <p class="text-sm text-slate-500 mt-1">Generate a form for the warehouse/requestor to receive items.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 sm:p-6">
+                        <form id="create-request-form" onsubmit="handleCreateRequest(event)">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">PO / Reference Number <span class="text-danger">*</span></label>
+                                    <input type="text" id="poNumber" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" placeholder="e.g., PO-2023-001">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Supplier / Vendor <span class="text-danger">*</span></label>
+                                    <input type="text" id="supplierName" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" placeholder="Supplier Name">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Expected Delivery Date</label>
+                                    <input type="date" id="expectedDate" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-shadow">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Assigned Receiver / Department</label>
+                                    <input type="text" id="assignedReceiver" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" placeholder="e.g., IT Dept, John Doe">
+                                </div>
+                            </div>
+
+                            <div class="mb-6">
+                                <div class="flex justify-between items-end mb-4">
+                                    <h3 class="text-lg font-semibold text-slate-800 border-b-2 border-primary pb-1 inline-block">Items to Receive</h3>
+                                    <button type="button" onclick="addPurchasingItemRow()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-3 rounded-md transition-colors flex items-center">
+                                        <i class="fas fa-plus mr-1"></i> Add Item
+                                    </button>
+                                </div>
+                                
+                                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                                    <table class="w-full text-left text-sm whitespace-nowrap">
+                                        <thead class="bg-slate-50 border-b border-slate-200">
+                                            <tr>
+                                                <th class="px-4 py-3 font-medium text-slate-600 w-12">#</th>
+                                                <th class="px-4 py-3 font-medium text-slate-600 min-w-[200px]">Item Description <span class="text-danger">*</span></th>
+                                                <th class="px-4 py-3 font-medium text-slate-600 w-32">Qty Ordered <span class="text-danger">*</span></th>
+                                                <th class="px-4 py-3 font-medium text-slate-600 w-32">UOM</th>
+                                                <th class="px-4 py-3 font-medium text-slate-600 w-16 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="purchasing-items-container" class="divide-y divide-slate-100 bg-white">
+                                            <!-- Items will be injected here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row justify-end pt-4 border-t border-slate-100 gap-3">
+                                <button type="button" onclick="clearPurchasingForm()" class="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-200 transition-colors">
+                                    Clear Form
+                                </button>
+                                <button type="submit" class="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors flex items-center justify-center shadow-sm">
+                                    <i class="fas fa-paper-plane mr-2"></i> Create Receiving Request
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mt-10">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                        <h2 class="text-lg font-semibold text-slate-800">Recent Requests</h2>
+                        <button onclick="exportDataToCSV()" class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-secondary rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-colors flex items-center justify-center shadow-sm">
+                            <i class="fas fa-file-export mr-2"></i> Export Data (CSV)
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-6 py-3 font-medium text-slate-600">PO Number</th>
+                                        <th class="px-6 py-3 font-medium text-slate-600">Supplier</th>
+                                        <th class="px-6 py-3 font-medium text-slate-600">Date Created</th>
+                                        <th class="px-6 py-3 font-medium text-slate-600">Status</th>
+                                        <th class="px-6 py-3 font-medium text-slate-600 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-requests-table" class="divide-y divide-slate-100 bg-white">
+                                    <!-- List injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- RECEIVING VIEW: Process Received Items     -->
+            <!-- ========================================== -->
+            <div id="view-receiving" class="fade-in space-y-6 hidden">
+                
+                <!-- Selection State -->
+                <div id="receiving-selection-state">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-4 mb-6">
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-900">Pending Receiving Requests</h1>
+                            <p class="text-sm text-slate-500 mt-1">Select a request below to begin inspecting and receiving items.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="pending-requests-grid">
+                        <!-- Pending requests cards injected here -->
+                    </div>
+                </div>
+
+                <!-- Active Processing State -->
+                <div id="receiving-processing-state" class="hidden">
+                    <div class="flex items-center mb-6">
+                        <button onclick="backToPendingList()" class="text-slate-500 hover:text-primary mr-4 transition-colors">
+                            <i class="fas fa-arrow-left text-xl"></i>
+                        </button>
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-900">Process Receipt</h1>
+                            <p class="text-sm text-slate-500 mt-1" id="process-header-info">PO-XXXX • Supplier Name</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Info Panel -->
+                        <div class="lg:col-span-1">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-5 sticky top-6">
+                                <h3 class="font-semibold text-slate-800 border-b border-slate-100 pb-3 mb-3">Request Details</h3>
+                                <div class="space-y-3 text-sm">
+                                    <div>
+                                        <span class="block text-slate-500 text-xs uppercase tracking-wider">PO Number</span>
+                                        <span class="font-medium text-slate-900" id="rec-info-po"></span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-slate-500 text-xs uppercase tracking-wider">Supplier</span>
+                                        <span class="font-medium text-slate-900" id="rec-info-supplier"></span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-slate-500 text-xs uppercase tracking-wider">Expected Date</span>
+                                        <span class="font-medium text-slate-900" id="rec-info-date"></span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-slate-500 text-xs uppercase tracking-wider">Receiver</span>
+                                        <span class="font-medium text-slate-900" id="rec-info-receiver"></span>
+                                    </div>
+                                </div>
+
+                                <hr class="my-5 border-slate-100">
+                                
+                                <h3 class="font-semibold text-slate-800 mb-3">Receiving Details</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Date Received <span class="text-danger">*</span></label>
+                                        <input type="date" id="actualReceivedDate" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Delivery Receipt / Invoice # <span class="text-danger">*</span></label>
+                                        <input type="text" id="drNumber" required class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-primary focus:border-primary text-sm" placeholder="Required">
+                                    </div>
+                                    <div class="pt-2">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Upload DR Image</label>
+                                        <input type="file" id="drImage" accept="image/*" capture="environment" onchange="handleImageUpload(event, 'dr')" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-700 transition-colors cursor-pointer">
+                                        <p class="text-xs text-slate-400 mt-1">Uses camera on mobile devices</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Upload SI Image</label>
+                                        <input type="file" id="siImage" accept="image/*" capture="environment" onchange="handleImageUpload(event, 'si')" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-700 transition-colors cursor-pointer">
+                                        <p class="text-xs text-slate-400 mt-1">Uses camera on mobile devices</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Items Processing Panel -->
+                        <div class="lg:col-span-2">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="p-4 sm:p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                                    <h3 class="font-semibold text-slate-800">Item Inspection</h3>
+                                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium" id="item-count-badge">0 Items</span>
+                                </div>
+                                <div class="p-0">
+                                    <form id="process-receipt-form" onsubmit="submitReceipt(event)">
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-left text-sm whitespace-nowrap sm:whitespace-normal">
+                                                <thead class="bg-white border-b border-slate-200">
+                                                    <tr>
+                                                        <th class="px-5 py-3 font-medium text-slate-600 min-w-[150px]">Item Description</th>
+                                                        <th class="px-5 py-3 font-medium text-slate-600 w-24">Ordered</th>
+                                                        <th class="px-5 py-3 font-medium text-slate-600 w-32">Received <span class="text-danger">*</span></th>
+                                                        <th class="px-5 py-3 font-medium text-slate-600 w-40">Status <span class="text-danger">*</span></th>
+                                                        <th class="px-5 py-3 font-medium text-slate-600 min-w-[150px]">Notes / Remarks</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="processing-items-container" class="divide-y divide-slate-100 bg-white">
+                                                    <!-- Items for processing injected here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <div class="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 mt-4">
+                                            <div class="mb-4">
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">General Receiving Notes (Optional)</label>
+                                                <textarea id="generalNotes" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-primary focus:border-primary text-sm" placeholder="Any overall comments about this delivery..."></textarea>
+                                            </div>
+                                            
+                                            <div class="flex justify-end">
+                                                <button type="submit" class="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-success rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-success transition-colors flex items-center justify-center shadow-sm">
+                                                    <i class="fas fa-check-double mr-2"></i> Submit Receiving Report
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- VIEW REQUEST DETAILS MODAL -->
+    <div id="view-modal" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 transition-opacity">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col fade-in">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-start p-4 sm:p-6 border-b border-slate-200 bg-slate-50 rounded-t-xl">
+                <div>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-1">
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900" id="modal-po">PO-XXXX</h2>
+                        <div id="modal-status-badge"></div>
+                    </div>
+                    <p class="text-slate-600 font-medium text-sm sm:text-base" id="modal-supplier"><i class="fas fa-building mr-2"></i>Supplier Name</p>
+                </div>
+                <button onclick="closeRequestDetails()" class="text-slate-400 hover:text-slate-700 bg-white hover:bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-4 sm:p-6 overflow-y-auto flex-grow">
+                <!-- Info Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8 p-4 sm:p-5 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                    <div>
+                        <span class="block text-slate-500 mb-1 text-xs uppercase tracking-wider font-semibold">Date Created</span>
+                        <span class="font-medium text-slate-900" id="modal-created-date"></span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-500 mb-1 text-xs uppercase tracking-wider font-semibold">Expected Date</span>
+                        <span class="font-medium text-slate-900" id="modal-expected-date"></span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-500 mb-1 text-xs uppercase tracking-wider font-semibold">Assigned Receiver</span>
+                        <span class="font-medium text-slate-900" id="modal-receiver"></span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-500 mb-1 text-xs uppercase tracking-wider font-semibold">Processed Date</span>
+                        <span class="font-medium text-slate-900" id="modal-processed-date">Pending</span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-500 mb-1 text-xs uppercase tracking-wider font-semibold">Delivery Receipt #</span>
+                        <span class="font-medium text-slate-900" id="modal-dr">N/A</span>
+                    </div>
+                    <div class="sm:col-span-2 md:col-span-3">
+                        <span class="block text-slate-500 mb-1 text-xs uppercase tracking-wider font-semibold">General Receiving Notes</span>
+                        <span class="font-medium text-slate-900 italic" id="modal-general-notes">None</span>
+                    </div>
+                </div>
+
+                <!-- Items Table -->
+                <h3 class="text-lg font-semibold text-slate-800 mb-3 border-b-2 border-primary pb-1 inline-block">Item Breakdown</h3>
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3 font-medium text-slate-600">Item Description</th>
+                                <th class="px-4 py-3 font-medium text-slate-600 text-center">Ordered</th>
+                                <th class="px-4 py-3 font-medium text-slate-600 text-center">Received</th>
+                                <th class="px-4 py-3 font-medium text-slate-600 text-center">Status</th>
+                                <th class="px-4 py-3 font-medium text-slate-600 w-1/3 min-w-[200px]">Item Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-items-tbody" class="divide-y divide-slate-100 bg-white">
+                            <!-- Injected rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Attachments Section -->
+                <div id="modal-attachments-section" class="mt-8 hidden">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-3 border-b-2 border-primary pb-1 inline-block">Attached Documents</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div id="modal-dr-container" class="hidden flex flex-col items-center bg-slate-50 p-4 border border-slate-200 rounded-lg">
+                            <span class="text-sm font-medium text-slate-700 mb-2">Delivery Receipt (DR)</span>
+                            <img id="modal-dr-image" src="" alt="DR Image" class="max-w-full max-h-64 object-contain rounded border border-slate-300 shadow-sm cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open(this.src, '_blank')" title="Click to open in new tab">
+                        </div>
+                        <div id="modal-si-container" class="hidden flex flex-col items-center bg-slate-50 p-4 border border-slate-200 rounded-lg">
+                            <span class="text-sm font-medium text-slate-700 mb-2">Sales Invoice (SI)</span>
+                            <img id="modal-si-image" src="" alt="SI Image" class="max-w-full max-h-64 object-contain rounded border border-slate-300 shadow-sm cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open(this.src, '_blank')" title="Click to open in new tab">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end">
+                <button onclick="closeRequestDetails()" class="w-full sm:w-auto px-5 py-2 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-100 transition-colors font-medium text-sm shadow-sm">
+                    Close Details
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_8-a7A5s7PVgSIi535X-c-K5UXISeqaw",
+            authDomain: "ehi-item-receiving.firebaseapp.com",
+            projectId: "ehi-item-receiving",
+            storageBucket: "ehi-item-receiving.firebasestorage.app",
+            messagingSenderId: "126075173516",
+            appId: "1:126075173516:web:6260e4941a7271895f99a9",
+            measurementId: "G-NY27F0KDSX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ehi-item-receiving-app';
+        let requestsRef;
+
+        // --- State Management ---
+        let requests = [];
+        let currentProcessingId = null;
+        let uploadedImages = { dr: null, si: null };
+
+        // --- Image Compression Helper ---
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const MAX_WIDTH = 1200;
+                    const MAX_HEIGHT = 1200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    callback(dataUrl);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Initialize Data
+        async function initData() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                const user = auth.currentUser;
+                if (!user) return;
+
+                // Syncing with public collection for shared access across departments
+                requestsRef = collection(db, 'artifacts', appId, 'public', 'data', 'requests');
+                
+                onSnapshot(requestsRef, (snapshot) => {
+                    requests = snapshot.docs.map(doc => doc.data());
+                    // Sort descending by creation date directly in memory (avoids complex query indexing)
+                    requests.sort((a, b) => new Date(b.dateCreated) - new Date(a.dateCreated));
+                    
+                    renderPurchasingTables();
+                    renderPendingRequests();
+                }, (error) => {
+                    console.error("Firestore error:", error);
+                    showNotification("Data sync failed.", "error");
+                });
+
+            } catch(err) {
+                console.error("Auth error:", err);
+                showNotification("Database connection failed.", "error");
+            }
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+
+        // --- UI Navigation ---
+        function switchRole(role) {
+            const vPurchasing = document.getElementById('view-purchasing');
+            const vReceiving = document.getElementById('view-receiving');
+            const tPurchasing = document.getElementById('tab-purchasing');
+            const tReceiving = document.getElementById('tab-receiving');
+
+            if (role === 'purchasing') {
+                vPurchasing.classList.remove('hidden');
+                vReceiving.classList.add('hidden');
+                tPurchasing.classList.add('tab-active');
+                tPurchasing.classList.remove('border-transparent');
+                tReceiving.classList.remove('tab-active');
+                tReceiving.classList.add('border-transparent');
+                renderPurchasingTables();
+            } else {
+                vPurchasing.classList.add('hidden');
+                vReceiving.classList.remove('hidden');
+                tReceiving.classList.add('tab-active');
+                tReceiving.classList.remove('border-transparent');
+                tPurchasing.classList.remove('tab-active');
+                tPurchasing.classList.add('border-transparent');
+                backToPendingList();
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const area = document.getElementById('notification-area');
+            const content = document.getElementById('notification-content');
+            const msgEl = document.getElementById('notification-message');
+            
+            msgEl.textContent = message;
+            area.classList.remove('hidden');
+            
+            content.className = 'p-4 rounded-md shadow-sm flex items-center justify-between text-sm font-medium fade-in';
+            if (type === 'success') {
+                content.classList.add('bg-green-50', 'text-green-800', 'border', 'border-green-200');
+            } else if (type === 'error') {
+                content.classList.add('bg-red-50', 'text-red-800', 'border', 'border-red-200');
+            } else if (type === 'warning') {
+                content.classList.add('bg-yellow-50', 'text-yellow-800', 'border', 'border-yellow-200');
+            }
+
+            setTimeout(hideNotification, 5000);
+        }
+
+        function hideNotification() {
+            document.getElementById('notification-area').classList.add('hidden');
+        }
+
+        // --- PURCHASING LOGIC ---
+        let purchasingItemsCounter = 0;
+
+        function addPurchasingItemRow() {
+            purchasingItemsCounter++;
+            const tbody = document.getElementById('purchasing-items-container');
+            const tr = document.createElement('tr');
+            tr.id = `pur-row-${purchasingItemsCounter}`;
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-slate-500">${purchasingItemsCounter}</td>
+                <td class="px-4 py-3">
+                    <input type="text" name="itemDesc" required class="w-full px-3 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary focus:border-primary text-sm" placeholder="Item name/spec">
+                </td>
+                <td class="px-4 py-3">
+                    <input type="number" name="itemQty" min="0.01" step="0.01" required class="w-full px-3 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                </td>
+                <td class="px-4 py-3">
+                    <input type="text" name="itemUom" class="w-full px-3 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary focus:border-primary text-sm" placeholder="pcs, kg, box">
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <button type="button" onclick="removePurchasingItemRow('${tr.id}')" class="text-danger hover:text-red-800 transition-colors" title="Remove row">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function removePurchasingItemRow(rowId) {
+            document.getElementById(rowId).remove();
+        }
+
+        function clearPurchasingForm() {
+            document.getElementById('create-request-form').reset();
+            document.getElementById('purchasing-items-container').innerHTML = '';
+            purchasingItemsCounter = 0;
+            addPurchasingItemRow(); // start with one empty row
+            
+            // Default dates
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('expectedDate').value = today;
+        }
+
+        async function handleCreateRequest(e) {
+            e.preventDefault();
+            
+            const rows = document.querySelectorAll('#purchasing-items-container tr');
+            if (rows.length === 0) {
+                showNotification('Please add at least one item.', 'error');
+                return;
+            }
+
+            const items = [];
+            let valid = true;
+            rows.forEach(row => {
+                const desc = row.querySelector('input[name="itemDesc"]').value.trim();
+                const qty = parseFloat(row.querySelector('input[name="itemQty"]').value);
+                const uom = row.querySelector('input[name="itemUom"]').value.trim() || 'pcs';
+
+                if (!desc || isNaN(qty) || qty <= 0) valid = false;
+
+                items.push({
+                    id: generateId(),
+                    desc,
+                    qtyOrdered: qty,
+                    uom
+                });
+            });
+
+            if (!valid) {
+                showNotification('Please fill all required item details correctly.', 'error');
+                return;
+            }
+
+            const newRequest = {
+                id: generateId(),
+                poNumber: document.getElementById('poNumber').value.trim(),
+                supplierName: document.getElementById('supplierName').value.trim(),
+                expectedDate: document.getElementById('expectedDate').value,
+                assignedReceiver: document.getElementById('assignedReceiver').value.trim() || 'Unassigned',
+                status: 'Pending',
+                dateCreated: new Date().toISOString(),
+                items: items
+            };
+
+            try {
+                await setDoc(doc(requestsRef, newRequest.id), newRequest);
+                clearPurchasingForm();
+                showNotification('Receiving request created successfully!');
+            } catch (err) {
+                console.error("Error creating request:", err);
+                showNotification("Failed to create request.", "error");
+            }
+        }
+
+        function renderPurchasingTables() {
+            const tbody = document.getElementById('recent-requests-table');
+            tbody.innerHTML = '';
+
+            requests.forEach(req => {
+                const tr = document.createElement('tr');
+                
+                let statusBadge = '';
+                if (req.status === 'Pending') statusBadge = '<span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full border border-yellow-200">Pending</span>';
+                else if (req.status === 'Completed') statusBadge = '<span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full border border-green-200">Completed</span>';
+                else if (req.status === 'Partial/Issues') statusBadge = '<span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full border border-red-200">Issues Noted</span>';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-semibold text-primary cursor-pointer hover:underline" onclick="viewRequestDetails('${req.id}')" title="Click to view full details">${req.poNumber}</td>
+                    <td class="px-6 py-4">${req.supplierName}</td>
+                    <td class="px-6 py-4 text-slate-500">${formatDate(req.dateCreated)}</td>
+                    <td class="px-6 py-4">${statusBadge}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="viewRequestDetails('${req.id}')" class="text-primary hover:text-blue-800 transition-colors mr-3" title="View Details">
+                            <i class="fas fa-eye text-lg"></i>
+                        </button>
+                        <button onclick="deleteRequest('${req.id}')" class="text-slate-400 hover:text-danger transition-colors" title="Delete Request">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function viewRequestDetails(id) {
+            const req = requests.find(r => r.id === id);
+            if (!req) return;
+
+            document.getElementById('modal-po').textContent = req.poNumber;
+            document.getElementById('modal-supplier').innerHTML = `<i class="fas fa-building mr-2 text-slate-400"></i>${req.supplierName}`;
+            
+            let statusBadge = '';
+            if (req.status === 'Pending') statusBadge = '<span class="px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded-full border border-yellow-200 whitespace-nowrap"><i class="fas fa-clock mr-1"></i> Pending Receipt</span>';
+            else if (req.status === 'Completed') statusBadge = '<span class="px-3 py-1 text-sm font-medium bg-green-100 text-green-800 rounded-full border border-green-200 whitespace-nowrap"><i class="fas fa-check-circle mr-1"></i> Received Complete</span>';
+            else if (req.status === 'Partial/Issues') statusBadge = '<span class="px-3 py-1 text-sm font-medium bg-red-100 text-red-800 rounded-full border border-red-200 whitespace-nowrap"><i class="fas fa-exclamation-triangle mr-1"></i> Received w/ Issues</span>';
+            document.getElementById('modal-status-badge').innerHTML = statusBadge;
+
+            document.getElementById('modal-created-date').textContent = formatDate(req.dateCreated);
+            document.getElementById('modal-expected-date').textContent = formatDate(req.expectedDate);
+            document.getElementById('modal-receiver').textContent = req.assignedReceiver || 'N/A';
+            document.getElementById('modal-processed-date').textContent = req.processedAt ? formatDate(req.processedAt) : 'Pending';
+            document.getElementById('modal-dr').textContent = req.drNumber || 'N/A';
+            document.getElementById('modal-general-notes').textContent = req.generalNotes || 'None';
+
+            const tbody = document.getElementById('modal-items-tbody');
+            tbody.innerHTML = '';
+
+            req.items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                
+                let itemStatusDisplay = '<span class="text-slate-400 italic">Pending</span>';
+                let receivedQtyDisplay = '<span class="text-slate-400">-</span>';
+                
+                if (req.status !== 'Pending') {
+                    receivedQtyDisplay = `<span class="font-semibold text-slate-800">${item.qtyReceived !== undefined ? item.qtyReceived : 0}</span>`;
+                    
+                    if (item.receiveStatus === 'Accepted') itemStatusDisplay = '<span class="text-success font-medium"><i class="fas fa-check mr-1"></i>Accepted</span>';
+                    else if (item.receiveStatus === 'Partial') itemStatusDisplay = '<span class="text-warning font-medium"><i class="fas fa-exclamation-circle mr-1"></i>Partial</span>';
+                    else if (item.receiveStatus === 'Rejected') itemStatusDisplay = '<span class="text-danger font-medium"><i class="fas fa-times mr-1"></i>Rejected</span>';
+                    else if (item.receiveStatus === 'Missing') itemStatusDisplay = '<span class="text-slate-500 font-medium"><i class="fas fa-question mr-1"></i>Missing</span>';
+                }
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-slate-800 whitespace-normal min-w-[200px]">${item.desc}</td>
+                    <td class="px-4 py-3 text-center text-slate-600">${item.qtyOrdered} <span class="text-xs text-slate-400">${item.uom}</span></td>
+                    <td class="px-4 py-3 text-center">${receivedQtyDisplay}</td>
+                    <td class="px-4 py-3 text-center">${itemStatusDisplay}</td>
+                    <td class="px-4 py-3 text-slate-600 text-sm whitespace-normal break-words">${item.receiveNotes || '<span class="text-slate-300 italic">No notes</span>'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const attachmentsSection = document.getElementById('modal-attachments-section');
+            const drContainer = document.getElementById('modal-dr-container');
+            const siContainer = document.getElementById('modal-si-container');
+            const drImage = document.getElementById('modal-dr-image');
+            const siImage = document.getElementById('modal-si-image');
+
+            let hasAttachments = false;
+
+            if (req.drImage) {
+                drImage.src = req.drImage;
+                drContainer.classList.remove('hidden');
+                hasAttachments = true;
+            } else {
+                drContainer.classList.add('hidden');
+            }
+
+            if (req.siImage) {
+                siImage.src = req.siImage;
+                siContainer.classList.remove('hidden');
+                hasAttachments = true;
+            } else {
+                siContainer.classList.add('hidden');
+            }
+
+            if (hasAttachments) {
+                attachmentsSection.classList.remove('hidden');
+            } else {
+                attachmentsSection.classList.add('hidden');
+            }
+
+            document.body.style.overflow = 'hidden'; 
+            document.getElementById('view-modal').classList.remove('hidden');
+        }
+
+        function closeRequestDetails() {
+            document.body.style.overflow = ''; 
+            document.getElementById('view-modal').classList.add('hidden');
+        }
+
+        async function deleteRequest(id) {
+            try {
+                await deleteDoc(doc(requestsRef, id));
+                showNotification('Request deleted.', 'warning');
+            } catch (err) {
+                console.error("Error deleting document", err);
+                showNotification('Error deleting request.', 'error');
+            }
+        }
+
+        // --- RECEIVING LOGIC ---
+        function renderPendingRequests() {
+            const grid = document.getElementById('pending-requests-grid');
+            grid.innerHTML = '';
+            
+            const pendingReqs = requests.filter(r => r.status === 'Pending');
+
+            if (pendingReqs.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-10 text-center text-slate-500 bg-white rounded-lg border border-slate-200">No pending requests to process.</div>`;
+                return;
+            }
+
+            pendingReqs.forEach(req => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between';
+                card.onclick = () => openProcessingView(req.id);
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-lg text-primary">${req.poNumber}</h3>
+                            <span class="bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs px-2 py-1 rounded-full"><i class="fas fa-clock mr-1"></i>Pending</span>
+                        </div>
+                        <p class="font-medium text-slate-800 mb-1"><i class="fas fa-building text-slate-400 mr-2 w-4"></i>${req.supplierName}</p>
+                        <p class="text-sm text-slate-600 mb-1"><i class="far fa-calendar text-slate-400 mr-2 w-4"></i>Exp: ${formatDate(req.expectedDate)}</p>
+                        <p class="text-sm text-slate-600 mb-4"><i class="fas fa-user-tag text-slate-400 mr-2 w-4"></i>For: ${req.assignedReceiver}</p>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex justify-between items-center text-sm">
+                        <span class="text-slate-500 font-medium">${req.items.length} Items</span>
+                        <span class="text-primary font-medium group-hover:underline">Process <i class="fas fa-arrow-right ml-1"></i></span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function backToPendingList() {
+            document.getElementById('receiving-selection-state').classList.remove('hidden');
+            document.getElementById('receiving-processing-state').classList.add('hidden');
+            currentProcessingId = null;
+            renderPendingRequests();
+        }
+
+        function openProcessingView(id) {
+            const req = requests.find(r => r.id === id);
+            if (!req) return;
+            currentProcessingId = id;
+
+            document.getElementById('process-header-info').textContent = `${req.poNumber} • ${req.supplierName}`;
+            document.getElementById('rec-info-po').textContent = req.poNumber;
+            document.getElementById('rec-info-supplier').textContent = req.supplierName;
+            document.getElementById('rec-info-date').textContent = formatDate(req.expectedDate);
+            document.getElementById('rec-info-receiver').textContent = req.assignedReceiver;
+            document.getElementById('item-count-badge').textContent = `${req.items.length} Items`;
+            
+            document.getElementById('actualReceivedDate').value = new Date().toISOString().split('T')[0];
+            const drInput = document.getElementById('drNumber');
+            drInput.value = '';
+            drInput.classList.remove('border-danger', 'ring-1', 'ring-danger');
+            document.getElementById('generalNotes').value = '';
+
+            uploadedImages = { dr: null, si: null };
+            document.getElementById('drImage').value = '';
+            document.getElementById('siImage').value = '';
+
+            const tbody = document.getElementById('processing-items-container');
+            tbody.innerHTML = '';
+
+            req.items.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+                tr.className = `border-b border-slate-100 ${rowClass}`;
+                
+                tr.innerHTML = `
+                    <td class="px-5 py-4">
+                        <div class="font-medium text-slate-800">${item.desc}</div>
+                        <div class="text-xs text-slate-500 mt-1">ID: ${item.id}</div>
+                    </td>
+                    <td class="px-5 py-4 text-slate-600 font-medium">${item.qtyOrdered} <span class="text-xs font-normal text-slate-400">${item.uom}</span></td>
+                    <td class="px-5 py-4">
+                        <div class="flex items-center">
+                            <input type="number" id="qty-rec-${item.id}" value="${item.qtyOrdered}" min="0" step="0.01" required class="w-full sm:w-20 px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                        </div>
+                    </td>
+                    <td class="px-5 py-4">
+                        <select id="status-${item.id}" onchange="handleStatusChange('${item.id}')" required class="w-full px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-primary focus:border-primary bg-white cursor-pointer font-medium text-slate-700">
+                            <option value="Accepted" class="text-success">✅ Accepted</option>
+                            <option value="Partial" class="text-warning">⚠️ Partial</option>
+                            <option value="Rejected" class="text-danger">❌ Rejected</option>
+                            <option value="Missing" class="text-slate-500">❓ Missing</option>
+                        </select>
+                    </td>
+                    <td class="px-5 py-4">
+                        <input type="text" id="notes-${item.id}" placeholder="Required if rejected" class="w-full px-3 py-1.5 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-primary focus:border-primary transition-colors">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                handleStatusChange(item.id);
+            });
+
+            document.getElementById('receiving-selection-state').classList.add('hidden');
+            document.getElementById('receiving-processing-state').classList.remove('hidden');
+        }
+
+        function handleStatusChange(itemId) {
+            const select = document.getElementById(`status-${itemId}`);
+            const notesInput = document.getElementById(`notes-${itemId}`);
+            
+            select.classList.remove('text-success', 'text-warning', 'text-danger', 'text-slate-500', 'border-success', 'border-danger', 'border-warning');
+            notesInput.classList.remove('border-danger', 'bg-red-50');
+
+            switch(select.value) {
+                case 'Accepted': select.classList.add('text-success'); break;
+                case 'Partial': select.classList.add('text-warning', 'border-warning'); break;
+                case 'Rejected': 
+                    select.classList.add('text-danger', 'border-danger'); 
+                    notesInput.classList.add('border-danger', 'bg-red-50'); 
+                    break;
+                case 'Missing': select.classList.add('text-slate-500'); break;
+            }
+        }
+        
+        function handleImageUpload(event, type) {
+            const file = event.target.files[0];
+            if (!file) {
+                uploadedImages[type] = null;
+                return;
+            }
+            compressImage(file, (compressedDataUrl) => {
+                uploadedImages[type] = compressedDataUrl;
+            });
+        }
+
+        async function submitReceipt(e) {
+            e.preventDefault();
+            
+            const reqIndex = requests.findIndex(r => r.id === currentProcessingId);
+            if (reqIndex === -1) return;
+            
+            const drNumberInput = document.getElementById('drNumber');
+            const drNumberVal = drNumberInput.value.trim();
+
+            if (!drNumberVal) {
+                showNotification('Delivery Receipt / Invoice # is required.', 'error');
+                drNumberInput.classList.add('border-danger', 'ring-1', 'ring-danger');
+                drNumberInput.focus();
+                return;
+            } else {
+                drNumberInput.classList.remove('border-danger', 'ring-1', 'ring-danger');
+            }
+
+            const req = requests[reqIndex];
+            let allAccepted = true;
+            let hasErrors = false;
+            let backorderItems = [];
+
+            req.items.forEach(item => {
+                const qtyInput = document.getElementById(`qty-rec-${item.id}`);
+                const qtyRecStr = qtyInput.value;
+                const qtyRec = parseFloat(qtyRecStr);
+                const status = document.getElementById(`status-${item.id}`).value;
+                const notes = document.getElementById(`notes-${item.id}`).value.trim();
+
+                if (qtyRecStr === '' || isNaN(qtyRec)) {
+                    qtyInput.classList.add('border-danger', 'ring-1', 'ring-danger');
+                    hasErrors = true;
+                } else {
+                    qtyInput.classList.remove('border-danger', 'ring-1', 'ring-danger');
+                }
+
+                if (status !== 'Accepted' && notes === '') {
+                    document.getElementById(`notes-${item.id}`).classList.add('border-danger', 'ring-1', 'ring-danger');
+                    hasErrors = true;
+                } else {
+                    document.getElementById(`notes-${item.id}`).classList.remove('border-danger', 'ring-1', 'ring-danger');
+                }
+
+                if (status !== 'Accepted' || qtyRec !== item.qtyOrdered) {
+                    allAccepted = false;
+                }
+
+                const remainingQty = item.qtyOrdered - qtyRec;
+                if (remainingQty > 0 && !isNaN(qtyRec)) {
+                    backorderItems.push({
+                        id: generateId(),
+                        desc: item.desc,
+                        qtyOrdered: remainingQty,
+                        uom: item.uom
+                    });
+                }
+
+                item.qtyReceived = isNaN(qtyRec) ? 0 : qtyRec;
+                item.receiveStatus = status;
+                item.receiveNotes = notes;
+            });
+
+            if (hasErrors) {
+                showNotification('Please fill all required fields correctly.', 'error');
+                return;
+            }
+
+            req.actualReceivedDate = document.getElementById('actualReceivedDate').value;
+            req.drNumber = drNumberVal;
+            req.generalNotes = document.getElementById('generalNotes').value.trim();
+            
+            if (uploadedImages.dr) req.drImage = uploadedImages.dr;
+            if (uploadedImages.si) req.siImage = uploadedImages.si;
+            
+            req.status = allAccepted ? 'Completed' : 'Partial/Issues';
+            req.processedAt = new Date().toISOString();
+
+            let backorderCreated = false;
+            let newReq = null;
+            if (backorderItems.length > 0) {
+                newReq = {
+                    id: generateId(),
+                    poNumber: req.poNumber + ' (Backorder)',
+                    supplierName: req.supplierName,
+                    expectedDate: '', 
+                    assignedReceiver: req.assignedReceiver,
+                    status: 'Pending',
+                    dateCreated: new Date().toISOString(),
+                    items: backorderItems,
+                    generalNotes: `Auto-generated backorder. Original PO: ${req.poNumber}.`
+                };
+                backorderCreated = true;
+            }
+
+            try {
+                // Update Original Request in Firestore
+                await setDoc(doc(requestsRef, req.id), req);
+                
+                // Create Backorder in Firestore if necessary
+                if (backorderCreated) {
+                    await setDoc(doc(requestsRef, newReq.id), newReq);
+                }
+
+                let notifMsg = req.status === 'Completed' ? 'Items received successfully.' : 'Receiving report submitted with issues.';
+                if (backorderCreated) {
+                    notifMsg += ' Pending request auto-generated for incomplete items.';
+                }
+
+                showNotification(notifMsg, req.status === 'Completed' ? 'success' : 'warning');
+                backToPendingList();
+
+            } catch (error) {
+                console.error("Error saving data:", error);
+                showNotification('Error saving receipt to database.', 'error');
+            }
+        }
+
+        // --- Data Export Logic ---
+        function exportDataToCSV() {
+            if (requests.length === 0) {
+                showNotification('No data to export.', 'warning');
+                return;
+            }
+
+            let csvContent = "PO Number,Supplier,Date Created,Expected Date,Processed Date,Assigned Receiver,Overall Status,DR Number,Item Description,Qty Ordered,Qty Received,UOM,Item Status,Item Notes\n";
+
+            const escapeCSV = (str) => {
+                if (str === null || str === undefined) return '""';
+                const s = String(str).replace(/"/g, '""'); 
+                return `"${s}"`; 
+            };
+
+            requests.forEach(req => {
+                req.items.forEach(item => {
+                    const row = [
+                        escapeCSV(req.poNumber),
+                        escapeCSV(req.supplierName),
+                        escapeCSV(formatDate(req.dateCreated)),
+                        escapeCSV(formatDate(req.expectedDate)),
+                        escapeCSV(req.processedAt ? formatDate(req.processedAt) : 'Pending'),
+                        escapeCSV(req.assignedReceiver),
+                        escapeCSV(req.status),
+                        escapeCSV(req.drNumber || 'N/A'),
+                        escapeCSV(item.desc),
+                        escapeCSV(item.qtyOrdered),
+                        escapeCSV(item.qtyReceived !== undefined ? item.qtyReceived : 0),
+                        escapeCSV(item.uom),
+                        escapeCSV(item.receiveStatus || 'Pending'),
+                        escapeCSV(item.receiveNotes || '')
+                    ];
+                    csvContent += row.join(',') + "\n";
+                });
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Receiving_Data_Export_${dateStr}.csv`);
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification('Data exported to CSV successfully!', 'success');
+        }
+
+        // --- Global Bindings and Initialization ---
+        window.switchRole = switchRole;
+        window.hideNotification = hideNotification;
+        window.addPurchasingItemRow = addPurchasingItemRow;
+        window.removePurchasingItemRow = removePurchasingItemRow;
+        window.clearPurchasingForm = clearPurchasingForm;
+        window.handleCreateRequest = handleCreateRequest;
+        window.viewRequestDetails = viewRequestDetails;
+        window.closeRequestDetails = closeRequestDetails;
+        window.deleteRequest = deleteRequest;
+        window.backToPendingList = backToPendingList;
+        window.openProcessingView = openProcessingView;
+        window.handleStatusChange = handleStatusChange;
+        window.handleImageUpload = handleImageUpload;
+        window.submitReceipt = submitReceipt;
+        window.exportDataToCSV = exportDataToCSV;
+
+        window.onload = () => {
+            clearPurchasingForm(); 
+            switchRole('purchasing');
+            initData(); // Initialize Firebase and sync data
+        };
+
+    </script>
+</body>
+</html>
