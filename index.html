@@ -563,7 +563,7 @@
                     }
                     
                     try {
-                        const roleDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile');
+                        const roleDocRef = doc(db, 'artifacts', appId, 'users', user.uid);
                         const roleDoc = await getDoc(roleDocRef);
                         
                         // NOW it is 100% safe to hide the login screen
@@ -645,7 +645,7 @@
                     
                     // Save user role directly to private collection
                     try {
-                        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile'), {
+                        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid), {
                             email: user.email,
                             role: role
                         });
@@ -666,7 +666,7 @@
             const user = auth.currentUser;
             if (!user) return;
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile'), {
+                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid), {
                     email: user.email || 'auto-provisioned',
                     role: role
                 });
