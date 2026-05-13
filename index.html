@@ -57,7 +57,7 @@
         <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-8 w-full max-w-md fade-in">
             <div class="text-center mb-6">
                 <!-- Replace the src link below with your actual customizable PNG file link -->
-                <img src="elev8group.png" alt="Elev8 Logo" class="h-20 w-auto mx-auto mb-3 object-contain">
+                <img src="image_56e5d5.png" alt="Elev8 Logo" class="h-20 w-auto mx-auto mb-3 object-contain">
                 <h2 class="text-2xl font-bold text-slate-900" id="auth-title">Sign In</h2>
                 <p class="text-sm text-slate-500 mt-1">Elev8 Item Receiving System</p>
             </div>
@@ -591,9 +591,10 @@
                         document.getElementById('error-content').innerHTML = `
                             <i class="fas fa-database text-danger text-5xl mb-4"></i>
                             <h2 class="text-xl font-bold text-slate-900 mb-2">Database Access Blocked</h2>
-                            <p class="text-slate-600 text-sm mb-4">Login succeeded, but Firestore blocked data access. This happens if your Security Rules are missing or incorrect.</p>
-                            <div class="bg-slate-50 p-3 rounded text-left text-xs text-slate-700 font-mono mb-4 border border-slate-200 overflow-x-auto">
-                                allow read, write: if request.auth != null;
+                            <p class="text-slate-600 text-sm mb-4">Login succeeded, but Firestore blocked data access. Here is the exact error from Firebase:</p>
+                            <div class="bg-red-50 text-red-800 p-3 rounded text-left text-xs font-mono mb-4 border border-red-200 overflow-x-auto">
+                                <strong>Error Code:</strong> ${err.code || 'N/A'}<br/>
+                                <strong>Message:</strong> ${err.message || err.toString()}
                             </div>
                             <button onclick="window.location.reload()" class="w-full bg-primary text-white py-2.5 rounded-lg font-medium mb-3 shadow-sm hover:bg-blue-800 transition-colors">Refresh Page</button>
                             <button onclick="logoutUser(); window.location.reload();" class="w-full border border-slate-300 text-slate-600 py-2.5 rounded-lg font-medium hover:bg-slate-50 transition-colors">Sign Out</button>
