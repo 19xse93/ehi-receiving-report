@@ -44,12 +44,20 @@
 </head>
 <body class="text-slate-800 h-screen flex flex-col">
 
+    <!-- GLOBAL ALERT NOTIFICATION -->
+    <div id="notification-area" class="fixed top-4 right-4 sm:top-6 sm:right-6 z-[9999] hidden max-w-sm w-full px-4 sm:px-0">
+        <div id="notification-content" class="p-4 rounded-lg shadow-xl flex items-start justify-between text-sm font-medium border">
+            <span id="notification-message" class="flex-grow mr-3"></span>
+            <button onclick="hideNotification()" class="text-current opacity-70 hover:opacity-100 flex-shrink-0 mt-0.5"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
     <!-- AUTH VIEW (Login/Register Barrier) -->
     <div id="view-auth" class="fixed inset-0 z-50 bg-slate-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-8 w-full max-w-md fade-in">
             <div class="text-center mb-6">
                 <!-- Replace the src link below with your actual customizable PNG file link -->
-                <img src="elev8group.png" class="h-20 w-auto mx-auto mb-3 object-contain">
+                <img src="elev8group.png" alt="Elev8 Logo" class="h-20 w-auto mx-auto mb-3 object-contain">
                 <h2 class="text-2xl font-bold text-slate-900" id="auth-title">Sign In</h2>
                 <p class="text-sm text-slate-500 mt-1">Elev8 Item Receiving System</p>
             </div>
@@ -107,7 +115,7 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <!-- Replace the src link below with your actual customizable PNG file link -->
-                    <img src="image_56e5d5.png" alt="Elev8 Logo" class="h-8 w-auto mr-3 object-contain">
+                    <img src="elev8group.png" alt="Elev8 Logo" class="h-8 w-auto mr-3 object-contain">
                     <span class="font-bold text-xl tracking-tight hidden sm:block">ELEV8 RECEIVING FORM</span>
                     <span class="font-bold text-xl tracking-tight sm:hidden">ELEV8 RCV</span>
                 </div>
@@ -129,14 +137,6 @@
     <main class="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-8">
         <div class="max-w-7xl mx-auto w-full">
             
-            <!-- ALERT NOTIFICATION CONTAINER -->
-            <div id="notification-area" class="mb-4 hidden">
-                <div id="notification-content" class="p-4 rounded-md shadow-sm flex items-center justify-between text-sm font-medium">
-                    <span id="notification-message"></span>
-                    <button onclick="hideNotification()" class="text-current opacity-70 hover:opacity-100"><i class="fas fa-times"></i></button>
-                </div>
-            </div>
-
             <!-- ========================================== -->
             <!-- PURCHASING VIEW: Create Receiving Request  -->
             <!-- ========================================== -->
@@ -488,6 +488,18 @@
         let currentUserRole = null;
         let isLoginMode = true;
 
+        // --- Global Error Handlers to prevent silent white screens ---
+        window.addEventListener('error', (event) => {
+            if (typeof showNotification === 'function') {
+                showNotification('System Error: ' + event.message, 'error');
+            }
+        });
+        window.addEventListener('unhandledrejection', (event) => {
+            if (typeof showNotification === 'function') {
+                showNotification('Network/DB Error: ' + (event.reason.message || 'Check connection.'), 'error');
+            }
+        });
+
         // --- Image Compression Helper ---
         function compressImage(file, callback) {
             const reader = new FileReader();
@@ -533,31 +545,45 @@
             }
 
             onAuthStateChanged(auth, async (user) => {
+                const authView = document.getElementById('view-auth');
+                const authBtn = document.getElementById('auth-submit-btn');
+
                 if (user && !user.isAnonymous) {
-                    // Hide auth overlay
-                    document.getElementById('view-auth').classList.add('hidden');
+                    // Show loading state BEFORE hiding the login box
+                    if (authBtn) {
+                        authBtn.disabled = true;
+                        authBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Loading profile...';
+                    }
                     
                     try {
                         const roleDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile');
                         const roleDoc = await getDoc(roleDocRef);
                         
-                        if (roleDoc.exists()) {
+                        // NOW it is 100% safe to hide the login screen
+                        authView.classList.add('hidden');
+                        
+                        if (roleDoc.exists() && roleDoc.data().role) {
                             currentUserRole = roleDoc.data().role;
                             launchApp();
                         } else {
-                            // Account exists but role wasn't chosen
+                            // Account exists but role wasn't chosen/saved
                             document.getElementById('view-role-select').classList.remove('hidden');
                         }
                     } catch (err) {
                         console.error("Error fetching user profile:", err);
-                        showNotification("Failed to load user permissions.", "error");
+                        showNotification("Network or Database error: " + err.message, "error");
+                        await signOut(auth); // Put them back to the logged-out state cleanly
                     }
                 } else {
                     // Logged out
-                    document.getElementById('view-auth').classList.remove('hidden');
+                    authView.classList.remove('hidden');
                     document.getElementById('view-role-select').classList.add('hidden');
                     document.getElementById('app-container').classList.add('hidden');
                     document.getElementById('app-container').classList.remove('flex');
+                    if (authBtn) {
+                        authBtn.disabled = false;
+                        authBtn.innerHTML = isLoginMode ? '<i class="fas fa-sign-in-alt mr-2"></i> Login' : '<i class="fas fa-user-plus mr-2"></i> Register';
+                    }
                 }
             });
         }
@@ -638,7 +664,7 @@
             const tabPurchasing = document.getElementById('tab-purchasing');
             const tabReceiving = document.getElementById('tab-receiving');
             
-            // Apply Strict Role Barrier
+            // Apply Strict Role Barrier with Safety Fallback
             if (currentUserRole === 'purchasing') {
                 tabPurchasing.classList.remove('hidden');
                 tabReceiving.classList.add('hidden');
@@ -647,6 +673,12 @@
                 tabPurchasing.classList.add('hidden');
                 tabReceiving.classList.remove('hidden');
                 switchRole('receiving');
+            } else {
+                // Safety fallback if role data is corrupted
+                document.getElementById('app-container').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('flex');
+                document.getElementById('view-role-select').classList.remove('hidden');
+                return; // Stop execution
             }
 
             // Sync Data
@@ -712,13 +744,13 @@
             msgEl.textContent = message;
             area.classList.remove('hidden');
             
-            content.className = 'p-4 rounded-md shadow-sm flex items-center justify-between text-sm font-medium fade-in';
+            content.className = 'p-4 rounded-lg shadow-xl flex items-start justify-between text-sm font-medium border fade-in';
             if (type === 'success') {
-                content.classList.add('bg-green-50', 'text-green-800', 'border', 'border-green-200');
+                content.classList.add('bg-green-50', 'text-green-800', 'border-green-200');
             } else if (type === 'error') {
-                content.classList.add('bg-red-50', 'text-red-800', 'border', 'border-red-200');
+                content.classList.add('bg-red-50', 'text-red-800', 'border-red-200');
             } else if (type === 'warning') {
-                content.classList.add('bg-yellow-50', 'text-yellow-800', 'border', 'border-yellow-200');
+                content.classList.add('bg-yellow-50', 'text-yellow-800', 'border-yellow-200');
             }
 
             setTimeout(hideNotification, 5000);
