@@ -107,6 +107,13 @@
         </div>
     </div>
 
+    <!-- ERROR VIEW (Catches Database Security Rule Issues) -->
+    <div id="view-error" class="fixed inset-0 z-50 bg-slate-100 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-8 w-full max-w-md fade-in text-center" id="error-content">
+            <!-- Error details injected here -->
+        </div>
+    </div>
+
     <!-- MAIN APP CONTAINER (Hidden until logged in) -->
     <div id="app-container" class="hidden flex-col h-full w-full">
 
@@ -115,7 +122,7 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <!-- Replace the src link below with your actual customizable PNG file link -->
-                    <img src="elev8group.png" alt="Elev8 Logo" class="h-8 w-auto mr-3 object-contain">
+                    <img src="image_56e5d5.png" alt="Elev8 Logo" class="h-8 w-auto mr-3 object-contain">
                     <span class="font-bold text-xl tracking-tight hidden sm:block">ELEV8 RECEIVING FORM</span>
                     <span class="font-bold text-xl tracking-tight sm:hidden">ELEV8 RCV</span>
                 </div>
@@ -561,6 +568,7 @@
                         
                         // NOW it is 100% safe to hide the login screen
                         authView.classList.add('hidden');
+                        document.getElementById('view-error').classList.add('hidden');
                         
                         if (roleDoc.exists() && roleDoc.data().role) {
                             currentUserRole = roleDoc.data().role;
@@ -571,13 +579,31 @@
                         }
                     } catch (err) {
                         console.error("Error fetching user profile:", err);
-                        showNotification("Network or Database error: " + err.message, "error");
-                        await signOut(auth); // Put them back to the logged-out state cleanly
+                        
+                        // If it fails here, it is almost ALWAYS a Firebase Security Rules issue.
+                        // Instead of a silent logout loop, we show a permanent error screen.
+                        authView.classList.add('hidden');
+                        document.getElementById('view-role-select').classList.add('hidden');
+                        document.getElementById('app-container').classList.add('hidden');
+                        document.getElementById('app-container').classList.remove('flex');
+                        document.getElementById('view-error').classList.remove('hidden');
+                        
+                        document.getElementById('error-content').innerHTML = `
+                            <i class="fas fa-database text-danger text-5xl mb-4"></i>
+                            <h2 class="text-xl font-bold text-slate-900 mb-2">Database Access Blocked</h2>
+                            <p class="text-slate-600 text-sm mb-4">Login succeeded, but Firestore blocked data access. This happens if your Security Rules are missing or incorrect.</p>
+                            <div class="bg-slate-50 p-3 rounded text-left text-xs text-slate-700 font-mono mb-4 border border-slate-200 overflow-x-auto">
+                                allow read, write: if request.auth != null;
+                            </div>
+                            <button onclick="window.location.reload()" class="w-full bg-primary text-white py-2.5 rounded-lg font-medium mb-3 shadow-sm hover:bg-blue-800 transition-colors">Refresh Page</button>
+                            <button onclick="logoutUser(); window.location.reload();" class="w-full border border-slate-300 text-slate-600 py-2.5 rounded-lg font-medium hover:bg-slate-50 transition-colors">Sign Out</button>
+                        `;
                     }
                 } else {
                     // Logged out
                     authView.classList.remove('hidden');
                     document.getElementById('view-role-select').classList.add('hidden');
+                    document.getElementById('view-error').classList.add('hidden');
                     document.getElementById('app-container').classList.add('hidden');
                     document.getElementById('app-container').classList.remove('flex');
                     if (authBtn) {
@@ -617,11 +643,17 @@
                     const user = userCredential.user;
                     
                     // Save user role directly to private collection
-                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile'), {
-                        email: user.email,
-                        role: role
-                    });
-                    showNotification('Account created successfully!', 'success');
+                    try {
+                        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile'), {
+                            email: user.email,
+                            role: role
+                        });
+                        showNotification('Account created successfully!', 'success');
+                    } catch (dbError) {
+                        console.error("DB Error on Registration", dbError);
+                        // If it fails to save the role, it will fall back to the view-role-select on load
+                        showNotification('Registered, but failed to save role. Please check database rules.', 'warning');
+                    }
                 }
             } catch (error) {
                 console.error("Auth Error:", error);
@@ -640,9 +672,18 @@
                 document.getElementById('view-role-select').classList.add('hidden');
                 currentUserRole = role;
                 launchApp();
-            } catch (e) {
-                console.error(e);
-                showNotification('Error setting account role.', 'error');
+            } catch (err) {
+                console.error(err);
+                document.getElementById('view-role-select').classList.add('hidden');
+                document.getElementById('view-error').classList.remove('hidden');
+                
+                document.getElementById('error-content').innerHTML = `
+                    <i class="fas fa-shield-halved text-danger text-5xl mb-4"></i>
+                    <h2 class="text-xl font-bold text-slate-900 mb-2">Save Role Failed</h2>
+                    <p class="text-slate-600 text-sm mb-4">Firestore blocked saving your role. Ensure your Database Rules allow writes.</p>
+                    <button onclick="window.location.reload()" class="w-full bg-primary text-white py-2.5 rounded-lg font-medium mb-3 hover:bg-blue-800 transition-colors">Refresh Page</button>
+                    <button onclick="logoutUser(); window.location.reload();" class="w-full border border-slate-300 text-slate-600 py-2.5 rounded-lg font-medium hover:bg-slate-50 transition-colors">Sign Out</button>
+                `;
             }
         }
 
@@ -692,7 +733,19 @@
                     else renderPendingRequests();
                 }, (error) => {
                     console.error("Firestore error:", error);
-                    showNotification("Data sync failed.", "error");
+                    
+                    // Show giant error screen if syncing data fails
+                    document.getElementById('app-container').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('flex');
+                    document.getElementById('view-error').classList.remove('hidden');
+                    
+                    document.getElementById('error-content').innerHTML = `
+                        <i class="fas fa-lock text-danger text-5xl mb-4"></i>
+                        <h2 class="text-xl font-bold text-slate-900 mb-2">Data Sync Blocked</h2>
+                        <p class="text-slate-600 text-sm mb-4">Your role was loaded, but Firestore is blocking access to the Requests table. Please check your Database Rules.</p>
+                        <button onclick="window.location.reload()" class="w-full bg-primary text-white py-2.5 rounded-lg font-medium mb-3 hover:bg-blue-800 transition-colors">Refresh Page</button>
+                        <button onclick="logoutUser(); window.location.reload();" class="w-full border border-slate-300 text-slate-600 py-2.5 rounded-lg font-medium hover:bg-slate-50 transition-colors">Sign Out</button>
+                    `;
                 });
             } else {
                 if (currentUserRole === 'purchasing') renderPurchasingTables();
